@@ -45,6 +45,16 @@ namespace SampleTest
 			return desc.FinishOperation ();
 		}
 
+		TFOperation ScalarConst(Single v, TFGraph graph, TFStatus status)
+		{
+			var desc = new TFOperationDesc(graph, "Const", "scalar");
+			desc.SetAttr("value", v, status);
+			if (status.StatusCode != TFCode.Ok)
+				return null;
+			desc.SetAttrType("dtype", TFDataType.Float);
+			return desc.FinishOperation();
+		}
+
 		TFOperation Add (TFOperation left, TFOperation right, TFGraph graph, TFStatus status)
 		{
 			var op = new TFOperationDesc (graph, "AddN", "add");
@@ -571,35 +581,72 @@ namespace SampleTest
 			}
 		}
 #endif
-		#endregion
-		public static void Main (string [] args)
+		void NiklasFirstSample()
 		{
-			Console.WriteLine (Environment.CurrentDirectory);
-			Console.WriteLine ("TensorFlow version: " + TFCore.Version);
+			using (var g = new TFGraph())
+			{
+				var s = new TFSession(g);
+
+				var x = g.Const(3.0, "x");
+				var y = g.Const(4.0, "y");
+
+				var runner = s.GetRunner();
+				runner.Run(x);
+				runner.Run(y);
+				runner.Run(g.Mul(x, y));
+				           
+				var var_a = g.Placeholder(TFDataType.Int32);
+				var var_b = g.Placeholder(TFDataType.Int32);
+
+				var add = g.Add(var_a, var_b);
+				var mul = g.Mul(var_a, var_b);
+
+				runner.AddInput (var_a, new TFTensor(3));
+				runner.AddInput (var_b, new TFTensor(4));
+
+				runner.Run(add);
+				runner.Run(mul);
+
+				var result = runner.Run();
+
+				Console.WriteLine($"{result[0]}, {result[1]}, {result[2]}");
+			}
+		}
+
+		#endregion
+		public static void Main(string[] args)
+		{
+			Console.WriteLine(Environment.CurrentDirectory);
+			Console.WriteLine("TensorFlow version: " + TFCore.Version);
 
 			//var b = TFCore.GetAllOpList ();
 
 
-			var t = new MainClass ();
-			t.TestImportGraphDef ();
-			t.TestSession ();
-			t.TestOperationOutputListSize ();
-			t.TestVariable ();
+			var t = new MainClass();
+
+			t.NiklasFirstSample();
+
+#if false
+			t.TestImportGraphDef();
+			t.TestSession();
+			t.TestOperationOutputListSize();
+			t.TestVariable();
 
 			// Current failing test
-			t.TestOutputShape ();
+			t.TestOutputShape();
 			//t.AttributesTest ();
-			t.WhileTest ();
+			t.WhileTest();
 
 			//var n = new Mnist ();
 			//n.ReadDataSets ("/Users/miguel/Downloads", numClasses: 10);
 
-			t.BasicConstantOps ();
-			t.BasicVariables ();
-			t.BasicMultidimensionalArray ();
-			t.BasicMatrix ();
+			t.BasicConstantOps();
+			t.BasicVariables();
+			t.BasicMultidimensionalArray();
+			t.BasicMatrix();
 
-			t.NearestNeighbor ();
+			t.NearestNeighbor();
+#endif
 
 		}
 	}
